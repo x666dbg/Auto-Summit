@@ -1,4 +1,4 @@
-# Autosummit – Roblox Executor Script
+# Auto Summit – Roblox Executor Script
 
 > GUI hub + auto-teleport “summit routes” for several mountain games on Roblox. Includes QoL toggles (God Mode, Infinite Jump, Auto Heal), click-to-teleport, and a WalkSpeed slider.
 
