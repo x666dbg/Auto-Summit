@@ -730,6 +730,49 @@ local AutoSummitKonoha = {
     { pos = CFrame.new(-822.58,124.45,-675.14), wait = 5,  label = "SUMMIT → START" },
 }
 
+local AutoSummitSumbing = {
+    CFrame.new(-229.69,440.91,2146.39), -- CP1
+    CFrame.new(-422.98,848.91,3203.40), -- CP2
+    CFrame.new(-33.31,1268.50,4040.99), -- CP3
+    CFrame.new(-1136.99,1552.91,4902.62), -- CP4
+    CFrame.new(-900.03,1955.17,5397.75), -- SUMMIT
+    CFrame.new(-338.95,4.91,27.93), -- Balik Ke Start
+}
+
+local AutoSummitTerserah = {
+    CFrame.new(312.90,121.29,156.62), -- CP1
+    CFrame.new(87.26,226.13,406.76), -- CP2
+    CFrame.new(-182.93,531.31,1104.80), -- CP3
+    CFrame.new(-738.85,515.08,1125.69), -- CP4
+    CFrame.new(125.68,532.72,1674.51), -- CP5
+    CFrame.new(-360.37,724.50,2052.89), -- SUMMIT
+    CFrame.new(-498.33,13.60,355.24), -- Start
+}
+
+local AutoSummitOwashu = {
+    CFrame.new(-306.00,68.61,632.71), -- CP1
+    CFrame.new(9.97,69.87,1103.22), -- CP2
+    CFrame.new(-605.84,250.88,1232.00), -- CP3
+    CFrame.new(-1077.51,326.33,1408.93), -- CP4
+    CFrame.new(-1192.40,485.98,1785.13), -- CP5
+    CFrame.new(-1584.57,671.96,2312.45), -- SUMMIT
+    CFrame.new(-20.00,36.50,-21.58), -- Start
+}
+
+local AutoSummitPapua = {
+    CFrame.new(-282.27,352.50,1169.06), -- CP1
+    CFrame.new(439.11,577.14,971.96), -- CP2
+    CFrame.new(1153.82,860.41,420.35), -- CP3
+    CFrame.new(1501.02,897.70,153.23), -- CP4
+    CFrame.new(1540.62,1044.38,-288.27), -- CP5
+    CFrame.new(2449.63,1405.50,-546.10), -- CP6
+    CFrame.new(3146.02,1512.12,-638.04), -- CP7
+    CFrame.new(4115.05,1842.34,-724.03), -- CP8
+    CFrame.new(5387.35,2140.50,-951.20), -- CP9
+    CFrame.new(6056.92,2248.86,-868.63), -- SUMMIT
+    CFrame.new(-1975.20,-65.42,26.87), -- START
+}
+
 local Toggle_A
 Toggle_A = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yahayuk",
@@ -823,6 +866,62 @@ Toggle_G = Tab:CreateToggle({
         if on then
             spawn(function()
                 runOnceResilient(AutoSummitKonoha, Toggle_G, 5, "Auto Summit - Konoha by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_H
+Toggle_H = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Sumbing",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_H",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitSumbing, Toggle_H, 5, "Auto Summit - Sumbing by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_I
+Toggle_I = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Terserah ( Masih Bug )",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_I",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitTerserah, Toggle_I, 5, "Auto Summit - Terserah by mZZ4")
+            end)
+        end
+    end,
+})
+
+local Toggle_J
+Toggle_J = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Owashu",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_J",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitOwashu, Toggle_J, 5, "Auto Summit - Owashu by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_K
+Toggle_K = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Papua",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_K",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitPapua, Toggle_K, 5, "Auto Summit - Papua by RzkyO")
             end)
         end
     end,
