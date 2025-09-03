@@ -22,6 +22,10 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 - **Auto Summit Gunung Rinjani**
 - **Auto Summit Gunung Hilih**
 - **Auto Summit Gunung Konoha**
+- **Auto Summit Gunung Sumbing**
+- **Auto Summit Gunung Terserah**
+- **Auto Summit Gunung Owashu**
+- **Auto Summit Gunung Papua**
 
 ---
 
