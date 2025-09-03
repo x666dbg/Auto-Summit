@@ -4,6 +4,14 @@
 
 ---
 
+## 🏁 Quick Loader
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/x666dbg/Auto-Summit/refs/heads/main/main.lua", true))()
+```
+
+---
+
 ## ✨ Fitur Utama
 
 - **Rayfield UI**  
@@ -54,11 +62,3 @@ Anda bisa menambah rute sendiri—lihat contoh struktur tabel `CFrame` pada scri
 
 - **Gunakan pada risiko Anda sendiri.** Teleport/GodMode dapat terdeteksi oleh anti-cheat; gunakan akun alternatif bila perlu.
 - Script ini untuk keperluan edukasi dan modding pribadi; hormati ToS Roblox dan developer game terkait.
-
----
-
-## 🏁 Quick Loader (contoh)
-
-```lua
-loadstring(game:HttpGet("https://raw.githubusercontent.com/x666dbg/Auto-Summit/refs/heads/main/main.lua", true))()
-```
