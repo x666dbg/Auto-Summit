@@ -1,6 +1,8 @@
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- local BOT_TOKEN = "aw"
@@ -203,47 +205,45 @@ local Toggle = Tab:CreateToggle({
     end,
 })
 
--- === CLICK TELEPORT + GET COORDINATE (SEND TO TELEGRAM) ===
-local Toggle = Tab:CreateToggle({
-    Name = "Click Teleport To Get Coordinate",
-    CurrentValue = false,
-    Flag = "ClickTP_Coords_Toggle",
-    Callback = function(Value)
-        local player = game.Players.LocalPlayer
-        local mouse = player:GetMouse()
+-- local Toggle = Tab:CreateToggle({
+--     Name = "Click Teleport To Get Coordinate",
+--     CurrentValue = false,
+--     Flag = "ClickTP_Coords_Toggle",
+--     Callback = function(Value)
+--         local player = game.Players.LocalPlayer
+--         local mouse = player:GetMouse()
 
-        local existingTool = player.Backpack:FindFirstChild("Equip to Click TP Coords") 
-            or player.Character:FindFirstChild("Equip to Click TP Coords")
+--         local existingTool = player.Backpack:FindFirstChild("Equip to Click TP Coords") 
+--             or player.Character:FindFirstChild("Equip to Click TP Coords")
 
-        if Value then
-            if not existingTool then
-                local tool = Instance.new("Tool")
-                tool.RequiresHandle = false
-                tool.Name = "Equip to Click TP Coords"
+--         if Value then
+--             if not existingTool then
+--                 local tool = Instance.new("Tool")
+--                 tool.RequiresHandle = false
+--                 tool.Name = "Equip to Click TP Coords"
 
-                tool.Activated:Connect(function()
-                    local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
-                    pos = CFrame.new(pos.X, pos.Y, pos.Z)
-                    player.Character.HumanoidRootPart.CFrame = pos
+--                 tool.Activated:Connect(function()
+--                     local pos = mouse.Hit + Vector3.new(0, 2.5, 0)
+--                     pos = CFrame.new(pos.X, pos.Y, pos.Z)
+--                     player.Character.HumanoidRootPart.CFrame = pos
 
-                    -- Ambil koordinat player setelah teleport
-                    local coords = player.Character.HumanoidRootPart.Position
-                    local msg = string.format(
-                        "Player %s Teleported!\nKoordinat:\n(%.2f,%.2f,%.2f)",
-                        player.Name, coords.X, coords.Y, coords.Z
-                    )
+--                     local coords = player.Character.HumanoidRootPart.Position
+--                     local msg = string.format(
+--                         "Player %s Teleported!\nKoordinat:\n(%.2f,%.2f,%.2f)",
+--                         player.Name, coords.X, coords.Y, coords.Z
+--                     )
 
-                    -- Kirim ke Telegram
-                    sendToTelegram(msg)
-                end)
+--                     -- Kirim ke Telegram
+--                     sendToTelegram(msg)
+--                 end)
 
-                tool.Parent = player.Backpack
-            end
-        else
-            if existingTool then existingTool:Destroy() end
-        end
-    end,
-})
+--                 tool.Parent = player.Backpack
+--             end
+--         else
+--             if existingTool then existingTool:Destroy() end
+--         end
+--     end,
+-- })
 
 local Slider = Tab:CreateSlider({
    Name = "WalkSpeed",
@@ -380,12 +380,117 @@ local Slider = Tab:CreateSlider({
 --     end,
 -- })
 
+local WAIT_SEC = 5
+local USE_HEARTBEAT_TIMER = true
+_G.__TP_BUSY = _G.__TP_BUSY or false
+
+local function createOrGetHud()
+    local pg = player:WaitForChild("PlayerGui")
+
+    local gui = pg:FindFirstChild("AutoSummitHUD")
+    if not gui then
+        gui = Instance.new("ScreenGui")
+        gui.Name = "AutoSummitHUD"
+        gui.ResetOnSpawn = false
+        gui.IgnoreGuiInset = true
+        gui.Parent = pg
+
+        local container = Instance.new("Frame")
+        container.Name = "Container"
+        container.AnchorPoint = Vector2.new(0.5, 0)
+        container.Position = UDim2.new(0.5, 0, 0.08, 0)
+        container.Size = UDim2.fromOffset(420, 86)
+        container.BackgroundTransparency = 0.25
+        container.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        container.Parent = gui
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 12)
+        corner.Parent = container
+
+        local stroke = Instance.new("UIStroke")
+        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        stroke.Thickness = 1.5
+        stroke.Color = Color3.fromRGB(70, 70, 70)
+        stroke.Parent = container
+
+        local title = Instance.new("TextLabel")
+        title.Name = "Title"
+        title.Size = UDim2.new(1, -20, 0, 32)
+        title.Position = UDim2.fromOffset(10, 6)
+        title.BackgroundTransparency = 1
+        title.Font = Enum.Font.SourceSansBold
+        title.TextScaled = true
+        title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        title.Text = "Auto Summit"
+        title.TextXAlignment = Enum.TextXAlignment.Left
+        title.Parent = container
+
+        local status = Instance.new("TextLabel")
+        status.Name = "Status"
+        status.Size = UDim2.new(1, -20, 0, 24)
+        status.Position = UDim2.fromOffset(10, 40)
+        status.BackgroundTransparency = 1
+        status.Font = Enum.Font.SourceSans
+        status.TextScaled = true
+        status.TextColor3 = Color3.fromRGB(220, 220, 220)
+        status.Text = "Menyiapkan..."
+        status.TextXAlignment = Enum.TextXAlignment.Left
+        status.Parent = container
+
+        local countdown = Instance.new("TextLabel")
+        countdown.Name = "Countdown"
+        countdown.Size = UDim2.new(1, -20, 0, 24)
+        countdown.Position = UDim2.fromOffset(10, 62)
+        countdown.BackgroundTransparency = 1
+        countdown.Font = Enum.Font.SourceSans
+        countdown.TextScaled = true
+        countdown.TextColor3 = Color3.fromRGB(180, 220, 255)
+        countdown.Text = ""
+        countdown.TextXAlignment = Enum.TextXAlignment.Left
+        countdown.Parent = container
+    end
+
+    local container = gui:WaitForChild("Container")
+    container.AnchorPoint = Vector2.new(0.5, 0)
+    container.Position    = UDim2.new(0.5, 0, 0.08, 0)
+
+    return gui,
+           container:WaitForChild("Title"),
+           container:WaitForChild("Status"),
+           container:WaitForChild("Countdown")
+end
+
+local function hudShow(titleText, statusText)
+    local gui, title, status, countdown = createOrGetHud()
+    title.Text = titleText or "Auto Summit"
+    status.Text = statusText or ""
+    countdown.Text = ""
+    gui.Enabled = true
+end
+
+local function hudStatus(statusText)
+    local _, _, status, _ = createOrGetHud()
+    status.Text = statusText or ""
+end
+
+local function hudCountdown(text)
+    local _, _, _, countdown = createOrGetHud()
+    countdown.Text = text or ""
+end
+
+local function hudHide()
+    local pg = player:FindFirstChild("PlayerGui")
+    if not pg then return end
+    local gui = pg:FindFirstChild("AutoSummitHUD")
+    if gui then gui.Enabled = false end
+end
+
 -- ===== Helper =====
 local function getCharacterAndHRP()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then
-        -- tunggu ulang kalau belum kebentuk
         character = player.Character or player.CharacterAdded:Wait()
         hrp = character:WaitForChild("HumanoidRootPart")
     end
@@ -397,28 +502,37 @@ local function resetCharacter()
     if character then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
         if humanoid then
-            humanoid.Health = 0 -- biar respawn
+            humanoid.Health = 0
         end
     end
 end
 
-local WAIT_SEC = 5
-local USE_HEARTBEAT_TIMER = true
-local RunService = game:GetService("RunService")
-local function sleep(sec)
+local function sleepSeconds(seconds, onTick)
+    if seconds <= 0 then return end
     if USE_HEARTBEAT_TIMER then
-        local t = 0
-        while t < sec do
-            t += RunService.Heartbeat:Wait()
+        local remaining = seconds
+        while remaining > 0 do
+            local dt = RunService.Heartbeat:Wait()
+            remaining -= dt
+            if onTick then
+                onTick(math.max(remaining, 0))
+            end
         end
     else
-        task.wait(sec)
+        local t = seconds
+        while t > 0 do
+            local waitChunk = math.min(1, t)
+            task.wait(waitChunk)
+            t -= waitChunk
+            if onTick then onTick(math.max(t, 0)) end
+        end
     end
 end
 
-_G.__TP_BUSY = _G.__TP_BUSY or false
+local function runOnceResilient(points, toggleRef, waitSec, runName)
+    waitSec = waitSec or 5
+    runName = runName or "Auto Summit"
 
-local function runOnceResilient(points, toggleRef)
     if _G.__TP_BUSY then
         warn("Auto Summit lagi jalan, batal start baru.")
         pcall(function()
@@ -430,9 +544,38 @@ local function runOnceResilient(points, toggleRef)
     end
     _G.__TP_BUSY = true
 
+    hudShow(runName, "Memulai...")
+
     local ok, err = pcall(function()
+        local total = #points
         local i = 1
-        while i <= #points do
+        while i <= total do
+            local entry = points[i]
+            local targetCF, stepWait, stepLabel
+
+            if typeof(entry) == "CFrame" then
+                targetCF = entry
+                stepWait  = waitSec
+                stepLabel = ("Point %d/%d"):format(i, total)
+            elseif typeof(entry) == "table" then
+                targetCF = (typeof(entry.pos) == "CFrame" and entry.pos)
+                        or (typeof(entry.cframe) == "CFrame" and entry.cframe)
+                        or (typeof(entry.CFrame) == "CFrame" and entry.CFrame)
+                        or (typeof(entry[1]) == "CFrame" and entry[1])
+                stepWait  = tonumber(entry.wait) or waitSec
+                stepLabel = entry.label or ("Point %d/%d"):format(i, total)
+            else
+                warn(("Format points[%d] tidak dikenal, skip."):format(i))
+            end
+
+            if not targetCF then
+                hudStatus(("❗ Data point %d tidak valid, stop."):format(i))
+                break
+            end
+
+            hudStatus(("Teleport %d/%d (%s) ..."):format(i, total, stepLabel))
+            hudCountdown("")
+
             local character, hrp = getCharacterAndHRP()
 
             local teleported = false
@@ -442,22 +585,34 @@ local function runOnceResilient(points, toggleRef)
                 end
 
                 local okSet = pcall(function()
-                    hrp.CFrame = points[i]
+                    hrp.CFrame = targetCF
                 end)
 
                 if okSet then
                     teleported = true
+                    hudStatus(("✅ Teleport %d/%d berhasil"):format(i, total))
                 else
+                    hudStatus(("Gagal set CFrame, retry... (point %d)"):format(i))
                     task.wait(0.1)
                 end
             end
 
-            if i < #points then
-                sleep(WAIT_SEC)
+            if i < total and (stepWait and stepWait > 0) then
+                local lastIntShown = -1
+                sleepSeconds(stepWait, function(remain)
+                    local s = math.ceil(remain)
+                    if s ~= lastIntShown then
+                        lastIntShown = s
+                        hudCountdown(("⏳ Jeda %d detik sebelum point berikutnya..."):format(s))
+                    end
+                end)
             end
+
             i += 1
         end
 
+        hudStatus("Selesai, reset karakter...")
+        hudCountdown("")
         resetCharacter()
     end)
 
@@ -471,7 +626,16 @@ local function runOnceResilient(points, toggleRef)
 
     if not ok then
         warn("runOnceResilient error: " .. tostring(err))
+        hudStatus("❌ Error: " .. tostring(err))
+        hudCountdown("")
+        task.wait(2)
+    else
+        hudStatus("🎉 Auto Summit selesai!")
+        hudCountdown("")
+        task.wait(2)
     end
+
+    hudHide()
 end
 
 local Tab = Window:CreateTab("Auto Summit")
@@ -555,6 +719,17 @@ local AutoSummitHilih = {
     CFrame.new(-913.85,23.17,-718.45), -- Balik Ke Start
 }
 
+local AutoSummitKonoha = {
+    { pos = CFrame.new(809.82,284.54,-576.08), wait = 30,  label = "CP1 → CP2" },
+    { pos = CFrame.new(771.31,516.59,-377.75), wait = 30, label = "CP2 → CP3" },
+    { pos = CFrame.new(-77.94,483.80,387.65), wait = 30,  label = "CP3 → CP4" },
+    { pos = CFrame.new(179.96,589.83,701.90), wait = 30, label = "CP4 → CP5" },
+    { pos = CFrame.new(350.36,596.12,822.64), wait = 30,  label = "CP5 → CP6" },
+    { pos = CFrame.new(795.65,821.21,626.56), wait = 60,  label = "CP6 → CP7" },
+    { pos = CFrame.new(926.30,1000.36,599.03), wait = 5,  label = "CP7 → SUMMIT" },
+    { pos = CFrame.new(-822.58,124.45,-675.14), wait = 5,  label = "SUMMIT → START" },
+}
+
 local Toggle_A
 Toggle_A = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yahayuk",
@@ -562,8 +737,8 @@ Toggle_A = Tab:CreateToggle({
     Flag = "AutoTP_Toggle_A",
     Callback = function(on)
         if on then
-            spawn(function()
-                runOnceResilient(AutoSummitYahayuk, Toggle_A)
+            task.spawn(function()
+                runOnceResilient(AutoSummitYahayuk, Toggle_A, 5, "Auto Summit - Yahayuk by RzkyO")
             end)
         end
     end,
@@ -577,7 +752,7 @@ Toggle_B = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitCKPTW, Toggle_B)
+                runOnceResilient(AutoSummitCKPTW, Toggle_B, 5, "Auto Summit - CKPTW by RzkyO")
             end)
         end
     end,
@@ -591,7 +766,7 @@ Toggle_C = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitATIN, Toggle_C)
+                runOnceResilient(AutoSummitATIN, Toggle_C, 5, "Auto Summit - Atin by RzkyO")
             end)
         end
     end,
@@ -605,7 +780,7 @@ Toggle_D = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitMerapi, Toggle_D)
+                runOnceResilient(AutoSummitMerapi, Toggle_D, 5, "Auto Summit - Merapi by RzkyO")
             end)
         end
     end,
@@ -619,7 +794,7 @@ Toggle_E = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitRinjani, Toggle_E)
+                runOnceResilient(AutoSummitRinjani, Toggle_E, 5, "Auto Summit - Rinjani by RzkyO")
             end)
         end
     end,
@@ -633,7 +808,21 @@ Toggle_F = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitHilih, Toggle_F)
+                runOnceResilient(AutoSummitHilih, Toggle_F, 5, "Auto Summit - Hilih by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_G
+Toggle_G = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Konoha",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_G",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitKonoha, Toggle_G, 5, "Auto Summit - Konoha by RzkyO")
             end)
         end
     end,
