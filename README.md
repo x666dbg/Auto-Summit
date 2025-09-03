@@ -31,7 +31,7 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
     * **Telegram:** [@govtrashit](https://t.me/govtrashit)
  
 * **mZZ4**
-    * **Telegram:** [@govtrashit](https://t.me/zaazazazz)
+    * **Telegram:** [@zaazazazz](https://t.me/zaazazazz)
 
 ---
 
