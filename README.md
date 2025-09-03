@@ -25,6 +25,16 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 
 ---
 
+## 👨‍💻 Author
+
+* **RzkyO**
+    * **Telegram:** [@govtrashit](https://t.me/govtrashit)
+ 
+* **mZZ4**
+    * **Telegram:** [@govtrashit](https://t.me/zaazazazz)
+
+---
+
 ## ⚠️ Disclaimer
 
 - **Gunakan pada risiko Anda sendiri.** Teleport/GodMode dapat terdeteksi oleh anti-cheat; gunakan akun alternatif bila perlu.
