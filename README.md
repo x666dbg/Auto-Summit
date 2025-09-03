@@ -18,7 +18,7 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 - **Auto Summit Gunung Yahayuk**
 - **Auto Summit Gunung CKPTW**
 - **Auto Summit Gunung ATIN**
-- **Auto Summit Gunung Merapi (Relog Abis Summmit)**
+- **Auto Summit Gunung Merapi (Relog Abis Summit)**
 - **Auto Summit Gunung Rinjani**
 - **Auto Summit Gunung Hilih**
 - **Auto Summit Gunung Konoha**
