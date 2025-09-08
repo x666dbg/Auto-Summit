@@ -30,6 +30,7 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 - **Auto Summit Gunung Sibuatan ( Rejoin )**
 - **Auto Summit Gunung AWAN ( Rejoin )**
 - **Auto Summit Gunung BOHONG**
+- **Auto Summit Gunung Jawir**
 
 ---
 
