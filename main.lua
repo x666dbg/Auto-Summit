@@ -1,6 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -382,6 +383,7 @@ local Slider = Tab:CreateSlider({
 
 local WAIT_SEC = 5
 local USE_HEARTBEAT_TIMER = true
+
 _G.__TP_BUSY = _G.__TP_BUSY or false
 
 local function createOrGetHud()
@@ -486,7 +488,6 @@ local function hudHide()
     if gui then gui.Enabled = false end
 end
 
--- ===== Helper =====
 local function getCharacterAndHRP()
     local character = player.Character or player.CharacterAdded:Wait()
     local hrp = character:FindFirstChild("HumanoidRootPart")
@@ -529,9 +530,67 @@ local function sleepSeconds(seconds, onTick)
     end
 end
 
-local function runOnceResilient(points, toggleRef, waitSec, runName)
-    waitSec = waitSec or 5
-    runName = runName or "Auto Summit"
+local _teleFailConn
+local function _bindTeleportRetry(placeId, player, sameServer)
+    if _teleFailConn then _teleFailConn:Disconnect() end
+    _teleFailConn = TeleportService.TeleportInitFailed:Connect(function(plr, result, err)
+        if plr ~= player then return end
+        warn("[AutoRejoin] Teleport gagal (" .. tostring(result) .. "): " .. tostring(err))
+        task.wait(5)
+        pcall(function()
+            if sameServer and game.JobId ~= "" then
+                TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
+            else
+                TeleportService:Teleport(placeId, player)
+            end
+        end)
+    end)
+end
+
+local function autoRejoin(delaySec, sameServer)
+    if typeof(delaySec) ~= "number" then delaySec = 5 end
+    if typeof(sameServer) ~= "boolean" then sameServer = false end
+
+    task.spawn(function()
+        if hudShow then hudShow("Auto Summit", ("🔁 Rejoin dalam %d detik..."):format(delaySec)) end
+
+        if hudCountdown then
+            for t = delaySec, 1, -1 do
+                if hudStatus then hudStatus(("🔁 Rejoin dalam %d detik..."):format(t)) end
+                hudCountdown(("⏳ %d"):format(t))
+                task.wait(1)
+            end
+        else
+            task.wait(delaySec)
+        end
+
+        local player  = Players.LocalPlayer
+        local placeId = game.PlaceId
+
+        _bindTeleportRetry(placeId, player, sameServer)
+
+        if hudStatus then hudStatus("🚪 Rejoining...") end
+        pcall(function()
+            if sameServer and game.JobId ~= "" then
+                TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
+            else
+                TeleportService:Teleport(placeId, player)
+            end
+        end)
+
+        if hudHide then hudHide() end
+    end)
+end
+
+local function runOnceResilient(points, toggleRef, waitSec, runName, opts)
+    if typeof(waitSec) == "string" and runName == nil and opts == nil then
+        runName = waitSec
+        waitSec = nil
+    end
+
+    if typeof(waitSec) ~= "number" then waitSec = 5 end
+    if runName == nil then runName = "Auto Summit" end
+    if opts == nil then opts = { autoRejoin = false } end
 
     if _G.__TP_BUSY then
         warn("Auto Summit lagi jalan, batal start baru.")
@@ -544,37 +603,35 @@ local function runOnceResilient(points, toggleRef, waitSec, runName)
     end
     _G.__TP_BUSY = true
 
-    hudShow(runName, "Memulai...")
+    if hudShow then hudShow(runName, "Memulai...") end
 
     local ok, err = pcall(function()
         local total = #points
         local i = 1
         while i <= total do
-            local entry = points[i]
-            local targetCF, stepWait, stepLabel
+            local entry    = points[i]
+            local targetCF = nil
+            local stepWait = waitSec
+            local stepLabel= ("Point %d/%d"):format(i, total)
 
             if typeof(entry) == "CFrame" then
                 targetCF = entry
-                stepWait  = waitSec
-                stepLabel = ("Point %d/%d"):format(i, total)
             elseif typeof(entry) == "table" then
                 targetCF = (typeof(entry.pos) == "CFrame" and entry.pos)
                         or (typeof(entry.cframe) == "CFrame" and entry.cframe)
                         or (typeof(entry.CFrame) == "CFrame" and entry.CFrame)
                         or (typeof(entry[1]) == "CFrame" and entry[1])
-                stepWait  = tonumber(entry.wait) or waitSec
-                stepLabel = entry.label or ("Point %d/%d"):format(i, total)
-            else
-                warn(("Format points[%d] tidak dikenal, skip."):format(i))
+                if typeof(entry.wait) == "number" then stepWait = entry.wait end
+                if typeof(entry.label) == "string" then stepLabel = entry.label end
             end
 
             if not targetCF then
-                hudStatus(("❗ Data point %d tidak valid, stop."):format(i))
+                if hudStatus then hudStatus(("❗ Data point %d tidak valid, stop."):format(i)) end
                 break
             end
 
-            hudStatus(("Teleport %d/%d (%s) ..."):format(i, total, stepLabel))
-            hudCountdown("")
+            if hudStatus then hudStatus(("Teleport %d/%d (%s) ..."):format(i, total, stepLabel)) end
+            if hudCountdown then hudCountdown("") end
 
             local character, hrp = getCharacterAndHRP()
 
@@ -583,27 +640,27 @@ local function runOnceResilient(points, toggleRef, waitSec, runName)
                 if not hrp or not hrp.Parent then
                     character, hrp = getCharacterAndHRP()
                 end
-
                 local okSet = pcall(function()
                     hrp.CFrame = targetCF
                 end)
-
                 if okSet then
                     teleported = true
-                    hudStatus(("✅ Teleport %d/%d berhasil"):format(i, total))
+                    if hudStatus then hudStatus(("✅ Teleport %d/%d berhasil"):format(i, total)) end
                 else
-                    hudStatus(("Gagal set CFrame, retry... (point %d)"):format(i))
+                    if hudStatus then hudStatus(("Gagal set CFrame, retry... (point %d)"):format(i)) end
                     task.wait(0.1)
                 end
             end
 
-            if i < total and (stepWait and stepWait > 0) then
-                local lastIntShown = -1
+            if i < total and stepWait and stepWait > 0 then
+                local lastInt = -1
                 sleepSeconds(stepWait, function(remain)
                     local s = math.ceil(remain)
-                    if s ~= lastIntShown then
-                        lastIntShown = s
-                        hudCountdown(("⏳ Jeda %d detik sebelum point berikutnya..."):format(s))
+                    if s ~= lastInt then
+                        lastInt = s
+                        if hudCountdown then
+                            hudCountdown(("⏳ Jeda %d detik sebelum point berikutnya..."):format(s))
+                        end
                     end
                 end)
             end
@@ -611,8 +668,8 @@ local function runOnceResilient(points, toggleRef, waitSec, runName)
             i += 1
         end
 
-        hudStatus("Selesai, reset karakter...")
-        hudCountdown("")
+        if hudStatus then hudStatus("Selesai, reset karakter...") end
+        if hudCountdown then hudCountdown("") end
         resetCharacter()
     end)
 
@@ -626,16 +683,25 @@ local function runOnceResilient(points, toggleRef, waitSec, runName)
 
     if not ok then
         warn("runOnceResilient error: " .. tostring(err))
-        hudStatus("❌ Error: " .. tostring(err))
-        hudCountdown("")
+        if hudStatus then hudStatus("❌ Error: " .. tostring(err)) end
+        if hudCountdown then hudCountdown("") end
         task.wait(2)
-    else
-        hudStatus("🎉 Auto Summit selesai!")
-        hudCountdown("")
-        task.wait(2)
+        if hudHide then hudHide() end
+        return
     end
 
-    hudHide()
+    if hudStatus then hudStatus("🎉 Auto Summit selesai!") end
+    if hudCountdown then hudCountdown("") end
+    task.wait(2)
+
+    if opts and opts.autoRejoin then
+        autoRejoin(
+            (typeof(opts.rejoinDelay) == "number" and opts.rejoinDelay) or 3,
+            (typeof(opts.rejoinSameServer) == "boolean" and opts.rejoinSameServer) or false
+        )
+    else
+        if hudHide then hudHide() end
+    end
 end
 
 local Tab = Window:CreateTab("Auto Summit")
@@ -695,6 +761,7 @@ local AutoSummitATIN = {
 local AutoSummitMerapi = {
     CFrame.new(-2000.68,1878.72,-268.20), -- Summit
     CFrame.new(-4240.44,13.90,2316.65), -- Basecamp
+    CFrame.new(-4240.44,13.90,2316.65), -- Start
 }
 
 local AutoSummitRinjani = {
@@ -773,6 +840,64 @@ local AutoSummitPapua = {
     CFrame.new(-1975.20,-65.42,26.87), -- START
 }
 
+local AutoSummitYagataw = {
+    CFrame.new(-421.68,193.49,553.80), -- CP1
+    CFrame.new(-630.61,580.31,1136.20), -- CP2
+    CFrame.new(-900.47,691.89,1224.18), -- CP3
+    CFrame.new(-387.07,1043.46,2050.91), -- CP4
+    CFrame.new(-752.93,1527.18,2058.24), -- CP5
+    CFrame.new(-480.29,1635.18,2283.78), -- CP6
+    CFrame.new(-88.17,1932.96,2113.13), -- CP7
+    CFrame.new(-0.56,2495.21,2041.70), -- Summit
+    CFrame.new(-250.50,36.50,207.63), -- Basecamp
+}
+
+local AutoSummitYagataw = {
+    CFrame.new(-421.68,193.49,553.80), -- CP1
+    CFrame.new(-630.61,580.31,1136.20), -- CP2
+    CFrame.new(-900.47,691.89,1224.18), -- CP3
+    CFrame.new(-387.07,1043.46,2050.91), -- CP4
+    CFrame.new(-752.93,1527.18,2058.24), -- CP5
+    CFrame.new(-480.29,1635.18,2283.78), -- CP6
+    CFrame.new(-88.17,1932.96,2113.13), -- CP7
+    CFrame.new(-0.56,2495.21,2041.70), -- Summit
+    CFrame.new(-250.50,36.50,207.63), -- Basecamp
+}
+
+local AutoSummitSibuatan = {
+    CFrame.new(-311.28,154.57,-324.72), -- CP1
+    CFrame.new(5393.69,8108.83,2206.70), -- SUMMIT
+    CFrame.new(1024.28,112.30,-699.23), -- START
+}
+
+local AutoSummitAWAN = {
+    CFrame.new(-752.05,69.16,7.87), -- CP1
+    CFrame.new(-781.00,289.16,156.39), -- CP2
+    CFrame.new(-1071.84,510.51,419.47), -- CP3
+    CFrame.new(-1174.26,640.21,24.83), -- CP4
+    CFrame.new(-879.83,866.64,-671.40), -- CP5
+    CFrame.new(-410.55,994.86,-1213.15), -- CP6
+    CFrame.new(-457.82,1255.87,-1903.55), -- CP7
+    CFrame.new(-503.84,1527.85,-2601.64), -- CP8
+    CFrame.new(-534.02,1701.36,-3047.00), -- CP9
+    CFrame.new(-513.29,1780.59,-3158.25), -- SUMMIT
+    CFrame.new(-522.24,1765.17,-3172.44), -- SUMMIT2
+}
+
+local AutoSummitBOHONG = {
+    CFrame.new(1156.26,163.57,-450.70), -- CP1
+    CFrame.new(929.48,274.94,-1014.63), -- CP2
+    CFrame.new(592.31,663.18,-893.33), -- CP3
+    CFrame.new(49.57,808.45,-995.56), -- CP4
+    CFrame.new(-35.32,905.33,-1139.37), -- CP5
+    CFrame.new(-688.45,889.49,-1383.23), -- CP6
+    CFrame.new(-652.17,898.22,-1773.40), -- CP7
+    CFrame.new(-1193.66,996.69,-1740.74), -- CP8
+    CFrame.new(-1329.81,898.09,-1154.87), -- CP9
+    CFrame.new(-971.55,1303.45,-1474.88), -- SUMMIT
+    CFrame.new(-971.30,1320.50,-1383.12), -- SUMMIT2
+}
+
 local Toggle_A
 Toggle_A = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yahayuk",
@@ -781,7 +906,7 @@ Toggle_A = Tab:CreateToggle({
     Callback = function(on)
         if on then
             task.spawn(function()
-                runOnceResilient(AutoSummitYahayuk, Toggle_A, 5, "Auto Summit - Yahayuk by RzkyO")
+                runOnceResilient(AutoSummitYahayuk, Toggle_A, 5, "Auto Summit - Yahayuk by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -817,13 +942,19 @@ Toggle_C = Tab:CreateToggle({
 
 local Toggle_D
 Toggle_D = Tab:CreateToggle({
-    Name = "Auto Summit Gunung Merapi (Relog)",
+    Name = "Auto Summit Gunung Merapi ( Rejoin )",
     CurrentValue = false,
     Flag = "AutoTP_Toggle_D",
     Callback = function(on)
         if on then
-            spawn(function()
-                runOnceResilient(AutoSummitMerapi, Toggle_D, 5, "Auto Summit - Merapi by RzkyO")
+            task.spawn(function()
+                runOnceResilient(
+                    AutoSummitMerapi,
+                    Toggle_M,
+                    5,
+                    "Auto Summit - Merapi by RzkyO",
+                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                )
             end)
         end
     end,
@@ -922,6 +1053,74 @@ Toggle_K = Tab:CreateToggle({
         if on then
             spawn(function()
                 runOnceResilient(AutoSummitPapua, Toggle_K, 5, "Auto Summit - Papua by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_L
+Toggle_L = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Yagataw ( Masih Bug )",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_L",
+    Callback = function(on)
+        if on then
+            spawn(function()
+                runOnceResilient(AutoSummitYagataw, Toggle_L, 5, "Auto Summit - Yagataw by RzkyO")
+            end)
+        end
+    end,
+})
+
+local Toggle_M
+Toggle_M = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Sibuatan ( Rejoin )",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_M",
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(
+                    AutoSummitSibuatan,
+                    Toggle_M,
+                    5,
+                    "Auto Summit - Sibuatan by RzkyO",
+                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                )
+            end)
+        end
+    end,
+})
+
+local Toggle_N
+Toggle_N = Tab:CreateToggle({
+    Name = "Auto Summit Gunung AWAN ( Rejoin )",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_N",
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(
+                    AutoSummitAWAN,
+                    Toggle_N,
+                    5,
+                    "Auto Summit - AWAN by RzkyO",
+                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                )
+            end)
+        end
+    end,
+})
+
+local Toggle_O
+Toggle_O = Tab:CreateToggle({
+    Name = "Auto Summit Gunung BOHONG",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_O",
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(AutoSummitBOHONG, Toggle_O, 5, "Auto Summit - BOHONG by RzkyO", { autoRejoin = false })
             end)
         end
     end,
