@@ -264,6 +264,275 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
+-- Players Tab
+
+local function getRoot(model)
+    if not model then return nil end
+    return model:FindFirstChild("HumanoidRootPart")
+        or model:FindFirstChild("Torso")
+        or model:FindFirstChild("UpperTorso")
+end
+
+local function typeOf(v)
+    local tf = typeof or function(x) return type(x) end
+    return tf(v)
+end
+
+local function getMyHRP()
+    local myChar = player.Character or player.CharacterAdded:Wait()
+    local myHRP  = getRoot(myChar) or myChar:WaitForChild("HumanoidRootPart", 8)
+    return myChar, myHRP
+end
+
+local function tpToTarget(targetPlayer)
+    print("[TP] start to", targetPlayer and targetPlayer.Name)
+
+    local myChar = player.Character or player.CharacterAdded:Wait()
+    local myHRP  = getRoot(myChar) or myChar:WaitForChild("HumanoidRootPart", 8)
+    if not myHRP then
+        print("[TP] myHRP not found")
+        return false, "HRP kamu gak ditemukan."
+    end
+
+    local tChar = targetPlayer.Character or targetPlayer.CharacterAdded:Wait()
+    local tHRP  = getRoot(tChar) or tChar:WaitForChild("HumanoidRootPart", 8)
+    if not tHRP then
+        print("[TP] target HRP not found")
+        return false, "Target belum punya HRP."
+    end
+
+    local destCFrame = tHRP.CFrame + Vector3.new(0, 2.5, 0)
+
+    pcall(function()
+        myHRP.AssemblyLinearVelocity = Vector3.new()
+        myHRP.AssemblyAngularVelocity = Vector3.new()
+    end)
+
+    for tries = 1, 4 do
+        local ok = pcall(function()
+            myHRP.CFrame = destCFrame
+        end)
+        if ok then
+            print("[TP] CFrame set ok on try", tries)
+            return true
+        end
+        task.wait(0.12)
+        myChar = player.Character or player.CharacterAdded:Wait()
+        myHRP  = getRoot(myChar) or myChar:WaitForChild("HumanoidRootPart", 8)
+        if not myHRP then
+            print("[TP] myHRP lost after retry")
+            return false, "HRP kamu hilang saat teleport."
+        end
+    end
+    print("[TP] CFrame method failed, fallback to PivotTo")
+
+    for tries = 1, 3 do
+        local ok = pcall(function()
+            if not myChar.PrimaryPart then
+                myChar.PrimaryPart = getRoot(myChar)
+            end
+            myChar:PivotTo(destCFrame)
+        end)
+        if ok then
+            print("[TP] PivotTo ok on try", tries)
+            return true
+        end
+        task.wait(0.12)
+    end
+    print("[TP] PivotTo failed, fallback to Humanoid:MoveTo")
+
+    local hum = myChar:FindFirstChildOfClass("Humanoid")
+    if hum then
+        local reached = false
+        local conn
+        conn = hum.MoveToFinished:Connect(function(ok)
+            reached = ok
+            if conn then conn:Disconnect() end
+        end)
+        pcall(function()
+            hum:MoveTo(destCFrame.Position)
+        end)
+        local t0 = os.clock()
+        while os.clock() - t0 < 2 do
+            if reached then break end
+            task.wait(0.1)
+        end
+        if reached then
+            print("[TP] MoveTo reached")
+            return true
+        end
+    end
+
+    print("[TP] all methods failed")
+    return false, "Gagal teleport (CFrame/PivotTo/MoveTo). Mungkin diblokir anti-teleport."
+end
+
+local PlayerTab = Window:CreateTab("👥 Players", nil)
+
+local optionToPlayer = {}
+local selectedLabel  = nil
+
+local function makeLabel(p)
+    if p == player then
+        return string.format("%s (You) [%d]", p.Name, p.UserId)
+    else
+        return string.format("%s [%d]", p.Name, p.UserId)
+    end
+end
+
+local function buildOptions()
+    optionToPlayer = {}
+    local opts = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        local label = makeLabel(p)
+        optionToPlayer[label] = p
+        table.insert(opts, label)
+    end
+    return opts
+end
+
+local function getSelected()
+    if selectedLabel and optionToPlayer[selectedLabel] then
+        return selectedLabel
+    end
+    local opts = buildOptions()
+    if #opts > 0 then
+        selectedLabel = opts[1]
+        return selectedLabel
+    end
+    return nil
+end
+
+local initialOpts = buildOptions()
+
+local function dropdownSetOptionsSafe(dd, opts)
+    if not dd then return end
+    local ok = false
+    if dd.SetOptions then
+        ok = pcall(function() dd:SetOptions(opts) end)
+    end
+    if (not ok) and dd.Refresh then
+        pcall(function() dd:Refresh(opts, opts[1]) end)
+    end
+end
+
+local function dropdownSetValueSafe(dd, value)
+    if not dd then return end
+    if dd.SetOption then
+        pcall(function() dd:SetOption(value) end)
+        return
+    end
+    if dd.Set then
+        pcall(function() dd:Set(value) end)
+        return
+    end
+    if dd.Refresh then
+        pcall(function()
+            local opts = buildOptions()
+            dd:Refresh(opts, value)
+        end)
+    end
+end
+
+local PlayerDropdown = PlayerTab:CreateDropdown({
+    Name = "Pilih Player",
+    Options = initialOpts,
+    CurrentOption = initialOpts[1] or nil,
+    Callback = function(label)
+        if typeOf(label) == "table" then
+            label = label[1]
+        end
+        selectedLabel = label
+        local target = optionToPlayer[label]
+        if target then
+            Rayfield:Notify({
+                Title   = "Target Dipilih",
+                Content = string.format("-> %s (%d)", target.Name, target.UserId),
+                Duration = 1.25
+            })
+        end
+    end,
+})
+
+if initialOpts[1] then
+    selectedLabel = initialOpts[1]
+end
+
+PlayerTab:CreateButton({
+    Name = "Refresh List",
+    Callback = function()
+        local opts = buildOptions()
+        dropdownSetOptionsSafe(PlayerDropdown, opts)
+        if #opts > 0 then
+            dropdownSetValueSafe(PlayerDropdown, opts[1])
+            selectedLabel = opts[1]
+        else
+            selectedLabel = nil
+            Rayfield:Notify({ Title="Players", Content="Belum ada pemain terdeteksi.", Duration=1.5 })
+        end
+        Rayfield:Notify({ Title="Players", Content="List di-refresh ("..tostring(#opts).." pemain).", Duration=1.2 })
+    end,
+})
+
+local function autoRefresh()
+    local opts = buildOptions()
+    dropdownSetOptionsSafe(PlayerDropdown, opts)
+    if #opts > 0 then
+        selectedLabel = (selectedLabel and optionToPlayer[selectedLabel]) and selectedLabel or opts[1]
+    else
+        selectedLabel = nil
+    end
+end
+
+Players.PlayerAdded:Connect(autoRefresh)
+Players.PlayerRemoving:Connect(function()
+    autoRefresh()
+    if selectedLabel and not optionToPlayer[selectedLabel] then
+        selectedLabel = nil
+    end
+end)
+
+PlayerTab:CreateButton({
+    Name = "Teleport To Player",
+    Callback = function()
+        print("[BTN] Teleport pressed")
+        local label = getSelected()
+        print("[BTN] selected label =", label)
+
+        if not label or not optionToPlayer[label] then
+            print("[BTN] label invalid, rebuilding options")
+            local opts = buildOptions()
+            dropdownSetOptionsSafe(PlayerDropdown, opts)
+            selectedLabel = opts[1]
+            if not selectedLabel then
+                Rayfield:Notify({ Title="Players", Content="Belum ada pemain di server.", Duration=1.5 })
+                return
+            end
+            label = selectedLabel
+        end
+
+        local target = optionToPlayer[label]
+        print("[BTN] target =", target and target.Name, target and target.UserId)
+
+        if not target then
+            Rayfield:Notify({ Title="Teleport", Content="Target tidak valid.", Duration=1.5 })
+            return
+        end
+        if target == player then
+            Rayfield:Notify({ Title="Teleport", Content="Tidak bisa teleport ke diri sendiri.", Duration=1.5 })
+            return
+        end
+
+        local ok, err = tpToTarget(target)
+        if ok then
+            Rayfield:Notify({ Title="Teleport", Content="Berhasil teleport ke "..label, Duration=1.5 })
+        else
+            Rayfield:Notify({ Title="Teleport", Content="Gagal: "..tostring(err), Duration=2 })
+            print("[TP] error:", err)
+        end
+    end,
+})
+
 -- local Tab = Window:CreateTab("Teleport")
 -- local Section = Tab:CreateSection("- 3xplo Yang Tersedia -")
 
@@ -278,7 +547,7 @@ local Slider = Tab:CreateSlider({
 --             local hrp = character:WaitForChild("HumanoidRootPart")
 
 --             -- Ganti ini ke koordinat tujuan kamu
---             local targetPosition = CFrame.new(-370.81,361.78,465.77)
+--             local targetPosition = CFrame.new(-421.68,193.49,553.80)
 
 --             hrp.CFrame = targetPosition
 --         end
@@ -297,7 +566,7 @@ local Slider = Tab:CreateSlider({
 --             local hrp = character:WaitForChild("HumanoidRootPart")
 
 --             -- Ganti ini ke koordinat tujuan kamu
---             local targetPosition = CFrame.new(3075.16,9108.50,4457.68)
+--             local targetPosition = CFrame.new(-630.61,580.31,1136.20)
 
 --             hrp.CFrame = targetPosition
 --         end
@@ -316,7 +585,7 @@ local Slider = Tab:CreateSlider({
 --             local hrp = character:WaitForChild("HumanoidRootPart")
 
 --             -- Ganti ini ke koordinat tujuan kamu
---             local targetPosition = CFrame.new(1876.87,9552.50,3487.89)
+--             local targetPosition = CFrame.new(-894.48,691.89,1222.08)
 
 --             hrp.CFrame = targetPosition
 --         end
@@ -335,7 +604,7 @@ local Slider = Tab:CreateSlider({
 --             local hrp = character:WaitForChild("HumanoidRootPart")
 
 --             -- Ganti ini ke koordinat tujuan kamu
---             local targetPosition = CFrame.new(1369.14,9776.50,3126.86)
+--             local targetPosition = CFrame.new(-389.85,1043.46,2045.04)
 
 --             hrp.CFrame = targetPosition
 --         end
@@ -898,6 +1167,28 @@ local AutoSummitBOHONG = {
     CFrame.new(-971.30,1320.50,-1383.12), -- SUMMIT2
 }
 
+local AutoSummitJawir = {
+    CFrame.new(-138.81,73.55,265.43), -- CP1
+    CFrame.new(99.42,169.55,523.83), -- CP2
+    CFrame.new(-100.93,169.53,553.54), -- CP3
+    CFrame.new(-250.64,113.60,417.87), -- CP4
+    CFrame.new(-291.71,202.87,671.44), -- CP5
+    CFrame.new(-445.32,283.26,903.01), -- CP6
+    CFrame.new(-660.97,393.53,983.71), -- CP7
+    CFrame.new(-780.47,539.31,713.50), -- CP8
+    CFrame.new(-997.04,591.28,806.86), -- CP9
+    CFrame.new(-1012.43,699.48,710.21), -- 10
+    CFrame.new(-1141.15,699.64,749.96), -- 11
+    CFrame.new(-1210.04,671.66,954.60), -- 12
+    CFrame.new(-1540.76,671.60,851.69), -- 13
+    CFrame.new(-1544.44,742.83,570.56), -- 14
+    CFrame.new(-1329.22,697.63,424.72), -- 15
+    CFrame.new(-1230.76,672.03,305.12), -- 16
+    CFrame.new(-892.24,597.54,334.98), -- 17
+    CFrame.new(-1300.47,861.88,643.66), -- SUMMIT
+    CFrame.new(-1300.47,861.88,643.66), -- SUMMIT
+}
+
 local Toggle_A
 Toggle_A = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yahayuk",
@@ -920,7 +1211,7 @@ Toggle_B = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitCKPTW, Toggle_B, 5, "Auto Summit - CKPTW by RzkyO")
+                runOnceResilient(AutoSummitCKPTW, Toggle_B, 5, "Auto Summit - CKPTW by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -934,7 +1225,7 @@ Toggle_C = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitATIN, Toggle_C, 5, "Auto Summit - Atin by RzkyO")
+                runOnceResilient(AutoSummitATIN, Toggle_C, 5, "Auto Summit - Atin by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -948,12 +1239,7 @@ Toggle_D = Tab:CreateToggle({
     Callback = function(on)
         if on then
             task.spawn(function()
-                runOnceResilient(
-                    AutoSummitMerapi,
-                    Toggle_M,
-                    5,
-                    "Auto Summit - Merapi by RzkyO",
-                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                runOnceResilient(AutoSummitMerapi, Toggle_M, 5, "Auto Summit - Merapi by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
                 )
             end)
         end
@@ -968,7 +1254,7 @@ Toggle_E = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitRinjani, Toggle_E, 5, "Auto Summit - Rinjani by RzkyO")
+                runOnceResilient(AutoSummitRinjani, Toggle_E, 5, "Auto Summit - Rinjani by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -982,7 +1268,7 @@ Toggle_F = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitHilih, Toggle_F, 5, "Auto Summit - Hilih by RzkyO")
+                runOnceResilient(AutoSummitHilih, Toggle_F, 5, "Auto Summit - Hilih by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -996,7 +1282,7 @@ Toggle_G = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitKonoha, Toggle_G, 5, "Auto Summit - Konoha by RzkyO")
+                runOnceResilient(AutoSummitKonoha, Toggle_G, 5, "Auto Summit - Konoha by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -1010,7 +1296,7 @@ Toggle_H = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitSumbing, Toggle_H, 5, "Auto Summit - Sumbing by RzkyO")
+                runOnceResilient(AutoSummitSumbing, Toggle_H, 5, "Auto Summit - Sumbing by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -1024,7 +1310,7 @@ Toggle_I = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitTerserah, Toggle_I, 5, "Auto Summit - Terserah by mZZ4")
+                runOnceResilient(AutoSummitTerserah, Toggle_I, 5, "Auto Summit - Terserah by mZZ4", { autoRejoin = false })
             end)
         end
     end,
@@ -1038,7 +1324,7 @@ Toggle_J = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitOwashu, Toggle_J, 5, "Auto Summit - Owashu by RzkyO")
+                runOnceResilient(AutoSummitOwashu, Toggle_J, 5, "Auto Summit - Owashu by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -1052,7 +1338,7 @@ Toggle_K = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitPapua, Toggle_K, 5, "Auto Summit - Papua by RzkyO")
+                runOnceResilient(AutoSummitPapua, Toggle_K, 5, "Auto Summit - Papua by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -1066,7 +1352,7 @@ Toggle_L = Tab:CreateToggle({
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitYagataw, Toggle_L, 5, "Auto Summit - Yagataw by RzkyO")
+                runOnceResilient(AutoSummitYagataw, Toggle_L, 5, "Auto Summit - Yagataw by RzkyO", { autoRejoin = false })
             end)
         end
     end,
@@ -1080,12 +1366,7 @@ Toggle_M = Tab:CreateToggle({
     Callback = function(on)
         if on then
             task.spawn(function()
-                runOnceResilient(
-                    AutoSummitSibuatan,
-                    Toggle_M,
-                    5,
-                    "Auto Summit - Sibuatan by RzkyO",
-                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                runOnceResilient(AutoSummitSibuatan, Toggle_M, 5, "Auto Summit - Sibuatan by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
                 )
             end)
         end
@@ -1100,12 +1381,7 @@ Toggle_N = Tab:CreateToggle({
     Callback = function(on)
         if on then
             task.spawn(function()
-                runOnceResilient(
-                    AutoSummitAWAN,
-                    Toggle_N,
-                    5,
-                    "Auto Summit - AWAN by RzkyO",
-                    { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                runOnceResilient(AutoSummitAWAN, Toggle_N, 5, "Auto Summit - AWAN by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
                 )
             end)
         end
@@ -1121,6 +1397,20 @@ Toggle_O = Tab:CreateToggle({
         if on then
             task.spawn(function()
                 runOnceResilient(AutoSummitBOHONG, Toggle_O, 5, "Auto Summit - BOHONG by RzkyO", { autoRejoin = false })
+            end)
+        end
+    end,
+})
+
+local Toggle_P
+Toggle_P = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Jawir ( Rejoin )",
+    CurrentValue = false,
+    Flag = "AutoTP_Toggle_P",
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(AutoSummitJawir, Toggle_P, 5, "Auto Summit - Jawir by RzkyO", { autoRejoin = false })
             end)
         end
     end,
