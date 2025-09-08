@@ -39,7 +39,7 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 * **RzkyO**
     * **Telegram:** [@govtrashit](https://t.me/govtrashit)
  
-* **mZZ4**
+* **Mzz4**
     * **Telegram:** [@zaazazazz](https://t.me/zaazazazz)
 
 ---
