@@ -1189,11 +1189,38 @@ local AutoSummitJawir = {
     CFrame.new(-1300.47,861.88,643.66), -- SUMMIT
 }
 
+local AutoSummitHELL = {
+    CFrame.new(-102.14,200.61,271.89), -- CP1
+    CFrame.new(-1512.61,1873.27,-71.88), -- SUMMIT
+    CFrame.new(-1512.61,1873.27,-71.88), -- START
+}
+
+local AutoSummitCihuy = {
+    CFrame.new(-1582.00,118.60,499.05), -- CP1
+    CFrame.new(-1177.50,206.86,-22.28), -- CP2
+    CFrame.new(-807.00,319.53,621.00), -- CP3
+    CFrame.new(468.60,195.16,790.39), -- CP4
+    CFrame.new(491.42,533.34,620.50), -- CP5
+    CFrame.new(168.50,1012.09,-124.29), -- CP6
+    CFrame.new(610.50,1186.63,-863.04), -- CP7
+    CFrame.new(253.85,1267.63,-970.16), -- CP8
+    CFrame.new(118.50,1399.94,-713.47), -- CP9
+    CFrame.new(104.12,1454.79,-463.25), -- CP10
+    CFrame.new(-200.02,1448.13,-436.17), -- CP11
+    CFrame.new(67.54,1481.11,-84.45), -- CP12
+    CFrame.new(579.56,1670.20,-320.61), -- SUM
+    CFrame.new(579.56,1670.20,-320.61), -- SUM
+}
+
+local AutoSummitInerie = {
+    CFrame.new(-2242.74,557.43,-493.60), -- SUMMIT
+    CFrame.new(-2242.74,557.43,-493.60), -- SUMMIT
+}
+
 local Toggle_A
 Toggle_A = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yahayuk",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_A",
     Callback = function(on)
         if on then
             task.spawn(function()
@@ -1207,7 +1234,6 @@ local Toggle_B
 Toggle_B = Tab:CreateToggle({
     Name = "Auto Summit Gunung CKPTW",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_B",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1221,7 +1247,6 @@ local Toggle_C
 Toggle_C = Tab:CreateToggle({
     Name = "Auto Summit Gunung ATIN",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_C",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1235,11 +1260,10 @@ local Toggle_D
 Toggle_D = Tab:CreateToggle({
     Name = "Auto Summit Gunung Merapi ( Rejoin )",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_D",
     Callback = function(on)
         if on then
             task.spawn(function()
-                runOnceResilient(AutoSummitMerapi, Toggle_M, 5, "Auto Summit - Merapi by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
+                runOnceResilient(AutoSummitMerapi, Toggle_D, 5, "Auto Summit - Merapi by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false }
                 )
             end)
         end
@@ -1250,7 +1274,6 @@ local Toggle_E
 Toggle_E = Tab:CreateToggle({
     Name = "Auto Summit Gunung Rinjani",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_E",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1264,7 +1287,6 @@ local Toggle_F
 Toggle_F = Tab:CreateToggle({
     Name = "Auto Summit Gunung Hilih",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_F",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1278,7 +1300,6 @@ local Toggle_G
 Toggle_G = Tab:CreateToggle({
     Name = "Auto Summit Gunung Konoha",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_G",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1292,7 +1313,6 @@ local Toggle_H
 Toggle_H = Tab:CreateToggle({
     Name = "Auto Summit Gunung Sumbing",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_H",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1306,11 +1326,10 @@ local Toggle_I
 Toggle_I = Tab:CreateToggle({
     Name = "Auto Summit Gunung Terserah ( Masih Bug )",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_I",
     Callback = function(on)
         if on then
             spawn(function()
-                runOnceResilient(AutoSummitTerserah, Toggle_I, 5, "Auto Summit - Terserah by mZZ4", { autoRejoin = false })
+                runOnceResilient(AutoSummitTerserah, Toggle_I, 5, "Auto Summit - Terserah by Mzz4", { autoRejoin = false })
             end)
         end
     end,
@@ -1320,7 +1339,6 @@ local Toggle_J
 Toggle_J = Tab:CreateToggle({
     Name = "Auto Summit Gunung Owashu",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_J",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1334,7 +1352,6 @@ local Toggle_K
 Toggle_K = Tab:CreateToggle({
     Name = "Auto Summit Gunung Papua",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_K",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1348,7 +1365,6 @@ local Toggle_L
 Toggle_L = Tab:CreateToggle({
     Name = "Auto Summit Gunung Yagataw ( Masih Bug )",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_L",
     Callback = function(on)
         if on then
             spawn(function()
@@ -1362,7 +1378,6 @@ local Toggle_M
 Toggle_M = Tab:CreateToggle({
     Name = "Auto Summit Gunung Sibuatan ( Rejoin )",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_M",
     Callback = function(on)
         if on then
             task.spawn(function()
@@ -1377,7 +1392,6 @@ local Toggle_N
 Toggle_N = Tab:CreateToggle({
     Name = "Auto Summit Gunung AWAN ( Rejoin )",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_N",
     Callback = function(on)
         if on then
             task.spawn(function()
@@ -1392,7 +1406,6 @@ local Toggle_O
 Toggle_O = Tab:CreateToggle({
     Name = "Auto Summit Gunung BOHONG",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_O",
     Callback = function(on)
         if on then
             task.spawn(function()
@@ -1404,13 +1417,51 @@ Toggle_O = Tab:CreateToggle({
 
 local Toggle_P
 Toggle_P = Tab:CreateToggle({
-    Name = "Auto Summit Gunung Jawir ( Rejoin )",
+    Name = "Auto Summit Gunung Jawir",
     CurrentValue = false,
-    Flag = "AutoTP_Toggle_P",
     Callback = function(on)
         if on then
             task.spawn(function()
                 runOnceResilient(AutoSummitJawir, Toggle_P, 5, "Auto Summit - Jawir by RzkyO", { autoRejoin = false })
+            end)
+        end
+    end,
+})
+
+local Toggle_Q
+Toggle_Q = Tab:CreateToggle({
+    Name = "Auto Summit Hell Expedition",
+    CurrentValue = false,
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(AutoSummitHELL, Toggle_Q, 5, "Auto Summit - Hell Expedition by RzkyO", { autoRejoin = false })
+            end)
+        end
+    end,
+})
+
+local Toggle_R
+Toggle_R = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Cihuy",
+    CurrentValue = false,
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(AutoSummitCihuy, Toggle_R, 5, "Auto Summit - Cihuy by RzkyO", { autoRejoin = false })
+            end)
+        end
+    end,
+})
+
+local Toggle_S
+Toggle_S = Tab:CreateToggle({
+    Name = "Auto Summit Gunung Inerie ( Rejoin )",
+    CurrentValue = false,
+    Callback = function(on)
+        if on then
+            task.spawn(function()
+                runOnceResilient(AutoSummitInerie, Toggle_S, 5, "Auto Summit - Inerie by RzkyO", { autoRejoin = true, rejoinDelay = 5, rejoinSameServer = false })
             end)
         end
     end,
