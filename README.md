@@ -33,7 +33,7 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 - **Auto Summit Gunung Jawir**
 - **Auto Summit Hell Expedition**
 - **Auto Summit Gunung Cihuy**
-- **Auto Summit Gunung Inerie**
+- **Auto Summit Gunung Inerie ( Rejoin )**
 
 ---
 
