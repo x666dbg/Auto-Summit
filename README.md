@@ -31,6 +31,9 @@ Daftar rute yang tersedia di Tab **Auto Summit**:
 - **Auto Summit Gunung AWAN ( Rejoin )**
 - **Auto Summit Gunung BOHONG**
 - **Auto Summit Gunung Jawir**
+- **Auto Summit Hell Expedition**
+- **Auto Summit Gunung Cihuy**
+- **Auto Summit Gunung Inerie**
 
 ---
 
