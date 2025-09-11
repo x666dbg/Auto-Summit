@@ -987,13 +987,16 @@ local AutoSummitYahayuk = {
 }
 
 local AutoSummitCKPTW = {
-    CFrame.new(386.77,308.18,-183.78), -- CP1
-    CFrame.new(100.16,410.78,616.67), -- CP2
-    CFrame.new(6.61,603.33,996.07), -- CP3
-    CFrame.new(871.21,868.46,586.52), -- CP4
-    CFrame.new(1612.18,1084.12,159.86), -- CP5
-    CFrame.new(2965.00,1531.21,705.93), -- CP6
-    CFrame.new(1811.56,1980.17,2166.88), -- SUMMIT
+    CFrame.new(517.06,160.18,-531.54), -- CP1
+    CFrame.new(386.77,308.18,-183.78), -- CP2
+    CFrame.new(100.16,410.78,616.67), -- CP3
+    CFrame.new(6.23,603.47,996.42), -- CP4
+    CFrame.new(871.85,864.43,586.87), -- CP5
+    CFrame.new(1612.18,1084.12,159.86), -- CP6
+    CFrame.new(2965.00,1531.21,705.93), -- CP7
+    CFrame.new(1943.24,1743.55,1219.65), -- C8
+    CFrame.new(1822.42,1979.40,2163.64), -- SUMMIT
+    CFrame.new(1822.42,1979.40,2163.64), -- SUMMIT
 }
 
 local AutoSummitATIN = {
